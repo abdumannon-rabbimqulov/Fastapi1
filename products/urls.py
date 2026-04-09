@@ -1,3 +1,4 @@
+from cryptography.hazmat.primitives.keywrap import aes_key_wrap
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -6,7 +7,11 @@ from typing import List
 from database import get_db
 from products.models import Products
 from products.schemas import ProductCreate, ProductUpdate, ProductResponse
-from products.crud import create_products
+from products.crud import (create_products,
+                update_product_db,get_all,
+                get_product,delete
+                )
+
 
 
 product_router = APIRouter(prefix="/products", tags=["Products"])
@@ -22,37 +27,51 @@ async def create_new_product(data: ProductCreate, db: AsyncSession = Depends(get
 
 @product_router.get("/", response_model=List[ProductResponse])
 async def get_products(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products))
-    products = result.scalars().all()
+    products=await get_all(
+        db=db
+    )
+
     return products
 
 @product_router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).where(Products.id == product_id))
-    product = result.scalar_one_or_none()
+    product = await get_product(
+        product_id=product_id,
+        db=db
+    )
     if not product:
         raise HTTPException(status_code=404, detail="Product not found")
     return product
 
+
+
+
+
 @product_router.put("/{product_id}", response_model=ProductResponse)
-async def update_product(product_id: int, product_update: ProductUpdate, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).where(Products.id == product_id))
-    db_product = result.scalar_one_or_none()
+async def update(
+        product_id: int,
+        product_update: ProductUpdate,
+        db: AsyncSession = Depends(get_db)
+):
+    # Logikani CRUD qatlamiga topshiramiz
+    db_product = await update_product_db(
+        db=db,
+        product_id=product_id,
+        product_update=product_update
+    )
+
+
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
-    
-    update_data = product_update.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(db_product, key, value)
-        
-    await db.commit()
-    await db.refresh(db_product)
+
     return db_product
 
 @product_router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Products).where(Products.id == product_id))
-    db_product = result.scalar_one_or_none()
+    db_product = delete(
+        product_id=product_id,
+        db=db
+    )
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
         
