@@ -39,7 +39,7 @@ async def get_all(db:AsyncSession):
     return products
 
 
-async def get_product(product_id: int, db: AsyncSession):
+async def get(product_id: int, db: AsyncSession):
     result = await db.execute(select(Products).where(Products.id == product_id))
     product = result.scalar_one_or_none()
     return product
@@ -52,3 +52,6 @@ async def delete(product_id: int, db: AsyncSession):
     await db.delete(db_product)
     await db.commit()
     return None
+
+
+

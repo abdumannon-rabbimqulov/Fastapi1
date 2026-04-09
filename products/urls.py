@@ -1,15 +1,12 @@
-from cryptography.hazmat.primitives.keywrap import aes_key_wrap
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from typing import List
 
 from database import get_db
-from products.models import Products
 from products.schemas import ProductCreate, ProductUpdate, ProductResponse
 from products.crud import (create_products,
                 update_product_db,get_all,
-                get_product,delete
+                get,delete
                 )
 
 
@@ -35,7 +32,7 @@ async def get_products(db: AsyncSession = Depends(get_db)):
 
 @product_router.get("/{product_id}", response_model=ProductResponse)
 async def get_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    product = await get_product(
+    product = await get(
         product_id=product_id,
         db=db
     )
@@ -68,13 +65,10 @@ async def update(
 
 @product_router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
-    db_product = delete(
+    db_product =await delete(
         product_id=product_id,
         db=db
     )
     if not db_product:
         raise HTTPException(status_code=404, detail="Product not found")
-        
-    await db.delete(db_product)
-    await db.commit()
     return None
