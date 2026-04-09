@@ -11,6 +11,3 @@ async def startup():
 
 app.include_router(product_router)
 
-@app.get("/")
-def root():
-    return {"message": "Welcome to FastAPI CRUD API"}

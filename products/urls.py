@@ -3,23 +3,22 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from typing import List
 
-from database import async_session
+from database import get_db
 from products.models import Products
 from products.schemas import ProductCreate, ProductUpdate, ProductResponse
+from products.crud import create_products
+
 
 product_router = APIRouter(prefix="/products", tags=["Products"])
 
-async def get_db():
-    async with async_session() as session:
-        yield session
 
 @product_router.post("/create", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
-async def create_product(product: ProductCreate, db: AsyncSession = Depends(get_db)):
-    db_product = Products(**product.model_dump())
-    db.add(db_product)
-    await db.commit()
-    await db.refresh(db_product)
-    return db_product
+async def create_new_product(data: ProductCreate, db: AsyncSession = Depends(get_db)):
+    new_product= await create_products(db=db, data=data)
+    if not new_product:
+        raise HTTPException(status_code=400, detail="Mahsulot yaratishda xatolik!")
+
+    return new_product
 
 @product_router.get("/", response_model=List[ProductResponse])
 async def get_products(db: AsyncSession = Depends(get_db)):

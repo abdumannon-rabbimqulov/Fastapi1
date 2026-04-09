@@ -6,6 +6,6 @@ from products.schemas import ProductCreate
 async def create_products(db : Session, data : ProductCreate):
     product=Products(**data.model_dump())
     db.add(product)
-    db.commit()
-    db.refresh(product)
+    await db.commit()
+    await db.refresh(product)
     return product
